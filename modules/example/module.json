@@ -1,0 +1,18 @@
+{
+    "moduleName": "example",
+    "commandCount": "2",
+    "commands": [
+        {
+            "name": "run",
+            "function": "main",
+            "arguments": "",
+            "description": "runs the main function"
+        },
+        {
+            "name": "test",
+            "function": "test",
+            "arguments": "",
+            "description": "runs the test function"
+        }
+    ]
+}
