@@ -1,0 +1,12 @@
+{
+    "moduleName": "info",
+    "description": "prints basic system information",
+    "commands": [
+        {
+            "name": "run",
+            "function": "main",
+            "arguments": "",
+            "description": "runs the main function"
+        }
+    ]
+}

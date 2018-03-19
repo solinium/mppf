@@ -2,109 +2,112 @@
 
 import os
 import sys
+import time
 import json
 import importlib
-from time import sleep
 
 
 def main():
-    os.system('clear')
-    print(
-        '''\u001b[32;1mWelcome to the Python Privilege Escalation Toolkit!\u001b[0m''')
-    sleep(2.5)
-    cmd()
+    cmd = None
+    while True:
+        while not cmdParse(cmd)[0]:
+            print('\033[2J\033[1;1H', end='')
+            print(
+                f"\u001b[32;1mmodules\u001b[0m\n{'-' * 7}\n{os.listdir('/etc/ppet/modules')}")
+            cmd = input("\n> ")
+        cmdMod(cmdParse(cmd)[1])
 
 
 def checkModule(module):
-    if not(os.path.isdir("/etc/ppet/modules/" + module)) or not(os.path.isfile('/etc/ppet/modules/' + module + '/' + module + '.py')) or not(os.path.isfile('/etc/ppet/modules/' + module + '/module.json')):
-        eout("Not a valid module! (look at modules/example for help)")
+    if not os.path.isdir(f'/etc/ppet/modules/{module}'):
+        eout(
+            f"Module {module} does not exist in /etc/ppet/modules! (look at modules/example for help)")
+    if not os.path.isfile(f'/etc/ppet/modules/{module}/{module}.py'):
+        pass
+    if not os.path.isfile(f'/etc/ppet/modules/{module}/module.json'):
+        pass
+    if module != json.load(open(f'/etc/ppet/modules/{module}/module.json'))['moduleName'].lower():
+        eout("Module name does not match json file!")
 
 
 def eout(error):
-    os.system('clear')
-    input(error + "\n| press enter to continue |\n")
-    cmd()
+    print('\033[2J\033[1;1H', end='')
+    print(error)
+    input("\n\e[2mpress enter to continue\n")
+    main()
 
 
-def cmd():
-    os.system('clear')
-    print("\u001b[32;1mmodules available\u001b[0m\n-----------------\n",
-          os.listdir("/etc/ppet/modules"))
-    cmdInput = input("\n> ")
-    if cmdInput.lower() == "help":
-        os.system('clear')
-        print(
-            "\u001b[32;1mhelp\u001b[0m\n----\n\ncommand examples:\nuse (module)\nhelp (module)\nexit")
-        input("\n| press enter to continue |\n")
-        cmd()
-    elif cmdInput[0:4].lower() == "use ":
-        checkModule(cmdInput[4:].lower())
-        cmdMod(cmdInput[4:].lower())
-    elif cmdInput[0:5].lower() == "help ":
-        checkModule(cmdInput[5:].lower())
-        os.system('clear')
-        os.system("cat /etc/ppet/modules/" +
-                  cmdInput[5:].lower() + "/help")
-        input("\n| press enter to continue |\n")
-        cmd()
-    elif cmdInput.lower() == "exit":
-        os.system('clear')
+def cmdParse(cmd):
+    if cmd == None:
+        return False, None
+    elif cmd == "help":
+        print('\033[2J\033[1;1H\u001b[32;1mhelp\u001b[0m\n----')
+        print('\ncommand examples:\nuse (module)\nhelp (module)\nexit')
+        input("\n\e[2mpress enter to continue\n")
+        return False, None
+    elif cmd[0:5] == "help ":
+        checkModule(cmd[5:])
+        print('\033[2J\033[1;1H', end='')
+        print(open(f'/etc/ppet/modules/{cmd[5:]}/help').read())
+        input("\n\e[2mpress enter to continue\n")
+        return False, None
+    elif cmd[0:4] == "use ":
+        checkModule(cmd[4:])
+        return True, cmd[4:].lower()
+    elif cmd == "exit":
+        print('\033[2J\033[1;1H', end='')
         exit()
-    elif cmdInput == "":
-        eout("Input cannot be empty!")
+    elif cmd == "":
+        return False, None
     else:
         eout("Invalid input!")
 
 
-def cmdMod(mod):
-    os.system('clear')
-    print('\u001b[32;1m' + mod + '\u001b[0m' + '\n' + ('-' * len(mod)))
-    sys.path.insert(0, '/etc/ppet/modules/' + mod)
-    module = importlib.import_module(mod)
-    try:
-        moduleJSON = json.load(
-            open('/etc/ppet/modules/' + mod + '/module.json'))
-    except FileNotFoundError:
-        eout("module.json invalid or non-existent!")
-    if mod != moduleJSON['moduleName'].lower():
-        eout("module does not match JSON file!")
-    cmdInput = input("\n> ")
-    if cmdInput.lower() == "exit":
-        os.system('clear')
-        exit()
-    elif cmdInput.lower() == "help":
-        os.system('clear')
-        print('\u001b[32;1m' + mod + '\u001b[0m' +
-              '\n' + ('-' * len(mod)) + '\n')
-        jsonID = 0
-        while jsonID < (int(moduleJSON['commandCount']) - 1):
-            jsonID += 1
-            print(mod + " - " + moduleJSON['commands']
-                  [jsonID]['description'] + '\n')
-            input("\n| press enter to continue |\n")
-            cmdMod(mod)
-    """ if cmdInput.lower() == "run":
-        os.system('clear')
-        module.main()
-    elif cmdInput.lower() == "help":
-        os.system('clear')
-        os.system("cat /etc/ppet/modules/" + mod + "/help")
-        input("\n| press enter to continue |\n")
-        cmdMod(mod)
-    elif cmdInput.lower() == "exit":
-        os.system('clear')
-        exit()
+def cmdMod(module):
+    sys.path.insert(0, f'/etc/ppet/modules/{module}')
+    if not importlib.util.find_spec(module) is None:
+        module = importlib.import_module(module)
     else:
-        print("Invalid command!")
-        eout() """
+        eout(f"{module} cannot be imported!")
+    try:
+        module.init()
+    except AttributeError:
+        pass
+    print('\033[2J\033[1;1H', end='')
+    print(f"\u001b[32;1m{module}\u001b[0m\n{'-' * len(module)}")
+    moduleJSON = json.load(open(f'/etc/ppet/modules/{module}/module.json'))
+    cmdInput = input('\n> ')
+    if cmdInput.lower() == "exit":
+        print('\033[2J\033[1;1H', end='')
+        exit()
+    elif cmdInput.lower() == "help":
+        print('\033[2J\033[1;1H', end='')
+        print(f"\u001b[32;1m{module}\u001b[0m\n{'-' * len(module)}\n")
+        jsonID = 0
+        while jsonID < len(moduleJSON['commands']) - 1:
+            jsonID += 1
+            print(
+                f"{moduleJSON['commands'][jsonID]['name']} - {moduleJSON['commands'][jsonID]['description']}\n")
+        input("\n(press enter to continue)\n")
+        cmdMod(module)
     jsonID = 0
     while cmdInput.lower() != moduleJSON['commands'][jsonID]['name'].lower():
-        if jsonID < (int(moduleJSON['commandCount']) - 1):
+        if jsonID < (len(moduleJSON['commands']) - 1):
             jsonID += 1
         else:
             eout("Invalid command!")
+    try:
+        callable(getattr(module, moduleJSON['commands'][jsonID]['function']))
+    except AttributeError:
+        eout(
+            f"Function '{moduleJSON['commands'][jsonID]['function']}' does not exist!")
     _ = getattr(module, moduleJSON['commands'][jsonID]['function'])()
 
 
 if __name__ == "__main__":
+    print('\033[2J\033[1;1H', end='')
+    print('\33]0;Python Privilege Escalation Toolkit\a', end='', flush=True)
+    print(
+        "\u001b[32;1mWelcome to the Python Privilege Escalation Toolkit!\u001b[0m")
+    time.sleep(2.5)
     main()
