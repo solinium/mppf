@@ -1,11 +1,11 @@
 #!/bin/sh
 
 sudo clear
-git clone https://github.com/solinium/ppet /tmp/ppet
-sudo mkdir /etc/ppet
-sudo cp -r /tmp/ppet/modules /etc/ppet/
-sudo cp /tmp/ppet/ppet.py /usr/bin/ppet
-sudo chmod +x /usr/bin/ppet
-rm -rf /tmp/ppet/
+git clone https://github.com/solinium/mppf /tmp/mppf
+sudo mkdir /etc/mppf
+sudo cp -r /tmp/mppf/modules /etc/mppf/
+sudo cp /tmp/ppet/mppf.py /usr/bin/mppf
+sudo chmod +x /usr/bin/mppf
+rm -rf /tmp/mppf/
 clear
-echo "Install completed, launch with 'ppet'."
+echo "Install completed, launch with 'mppf'."

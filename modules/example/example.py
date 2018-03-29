@@ -12,13 +12,13 @@ def error(err):
     return err
 
 
-def test(x, y):
+def test(arg1, arg2):
     '''This function prints two arguments.'''
     print("example.test started!")
-    print("Arguments passed:", x, y)
+    print("Arguments passed:", arg1, arg2)
 
 
-def test2(*x):
+def test2(*args):
     '''This function prints a dynamic amount of arguments.'''
     print("example.test2 started!")
-    print("Argument(s) passed:", x)
+    print("Argument(s) passed:", args)

@@ -4,6 +4,7 @@ import subprocess
 
 
 def main():
+    '''Does the basic printing, no arguments.'''
     if shutil.which('uname') != None:
         print("\u001b[32;1muname\u001b[0m\n-----")
         os.system('uname -a')

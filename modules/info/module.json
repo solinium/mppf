@@ -1,6 +1,6 @@
 {
     "moduleName": "info",
-    "description": "prints basic system information",
+    "description": "Prints basic system information, linux only ATM.",
     "commands": [
         {
             "name": "run",

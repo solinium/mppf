@@ -18,11 +18,11 @@ def main():
         while not cmdParse(cmd):
             print('\033[2J\033[1;1H', end='')
             print(
-                f"\u001b[32;1mmodules\u001b[0m\n{'-' * 7}\n{os.listdir('/etc/ppet/modules')}")
+                f"\u001b[32;1mmodules\u001b[0m\n{'-' * 7}\n{os.listdir('/etc/mppf/modules')}")
             cmd = shlex.split(input('\n> ').lower())
         moduleName = cmd[1]
         moduleJSON = json.load(
-            open(f'/etc/ppet/modules/{moduleName}/module.json'))
+            open(f'/etc/mppf/modules/{moduleName}/module.json'))
         module = importModule(moduleName)
         cmd = ['']
         while not cmdParseLoaded(cmd, moduleName, moduleJSON, module):
@@ -51,21 +51,21 @@ def main():
 
 def checkModule(name):
     name = name.lower()
-    if not os.path.isdir(f'/etc/ppet/modules/{name}'):
+    if not os.path.isdir(f'/etc/mppf/modules/{name}'):
         err(
-            f"Module {name} does not exist in /etc/ppet/modules! (look at modules/example for help)")
-    if not os.path.isfile(f'/etc/ppet/modules/{name}/{name}.py'):
+            f"Module {name} does not exist in /etc/mppf/modules! (look at modules/example for help)")
+    if not os.path.isfile(f'/etc/mppf/modules/{name}/{name}.py'):
         pass
-    if not os.path.isfile(f'/etc/ppet/modules/{name}/module.json'):
+    if not os.path.isfile(f'/etc/mppf/modules/{name}/module.json'):
         pass
-    if name != json.load(open(f'/etc/ppet/modules/{name}/module.json'))['moduleName']:
+    if name != json.load(open(f'/etc/mppf/modules/{name}/module.json'))['moduleName']:
         err("Module name does not match json file!")
 
 
 def err(error):
     print('\033[2J\033[1;1H', end='')
     print(error)
-    input("\npress enter to continue\n")
+    input("\n(press enter to continue)\n")
     main()
 
 
@@ -77,19 +77,20 @@ def cmdParse(cmd):
     if cmd[0] == 'help':
         if len(cmd) == 1:
             print('\033[2J\033[1;1H\u001b[32;1mhelp\u001b[0m\n----')
-            print('\ncommand examples:\nuse (module)\nhelp (module)\nexit')
+            print('\ncommand examples:\nuse (module)\nback (in module)\nhelp\nexit')
             input("\n(press enter to continue)\n")
             return False
         elif len(cmd) == 2:
             print('\033[2J\033[1;1H', end='')
-            print(open(f'/etc/ppet/modules/{cmd[5:]}/help').read())
+            print(open(f'/etc/mppf/modules/{cmd[5:]}/help').read())
             input("\n(press enter to continue)\n")
             return False
         err("Invalid input!")
     elif cmd[0] == 'use':
+
         checkModule(cmd[1])
         return True
-    elif cmd[0] == 'exit':
+    elif cmd[0] == 'exit' or 'quit':
         print('\033[2J\033[1;1H', end='')
         exit()
     err("Invalid input!")
@@ -105,14 +106,14 @@ def cmdParseLoaded(cmd, name, json, module):
             f"\u001b[32;1m{name}\u001b[0m\n{'-' * len(name)}\n")
         print(f"{json['description']}\n")
         jsonID = 0
-        # print(
-        #    f"{json['commands'][jsonID]['name']} - {json['commands'][jsonID]['description']}\n")
         while jsonID < len(json['commands']):
             print(
                 f"{json['commands'][jsonID]['name']} - {inspect.getdoc(getattr(module, json['commands'][jsonID]['function']))}\n")
             jsonID += 1
         input("\n(press enter to continue)\n")
         return False
+    elif cmd[0] == 'back':
+        main()
     elif cmd[0] == 'exit':
         print('\033[2J\033[1;1H', end='')
         exit()
@@ -130,7 +131,7 @@ def cmdParseLoaded(cmd, name, json, module):
 
 def importModule(name):
     name = name.lower()
-    sys.path.insert(0, f'/etc/ppet/modules/{name}')
+    sys.path.insert(0, f'/etc/mppf/modules/{name}')
     try:
         module = importlib.import_module(name)
     except AttributeError:
@@ -144,8 +145,8 @@ def importModule(name):
 
 if __name__ == "__main__":
     print('\033[2J\033[1;1H', end='')
-    print('\33]0;Python Privilege Escalation Toolkit\a', end='', flush=True)
+    print('\33]0;Mediocre Python Penetration Framework\a', end='', flush=True)
     print(
-        "\u001b[32;1mWelcome to the Python Privilege Escalation Toolkit!\u001b[0m")
+        "\u001b[32;1mWelcome to the Mediocre Python Penetration Framework!\u001b[0m")
     time.sleep(2.5)
     main()
