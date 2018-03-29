@@ -1,107 +1,145 @@
 #!/usr/bin/env python3
 
 import os
+import re
 import sys
 import time
 import json
+import shlex
+import inspect
 import importlib
+
+# change parse functions to use split() and not hacky string concatenation
 
 
 def main():
-    cmd = None
     while True:
-        while not cmdParse(cmd)[0]:
+        cmd = None
+        while not cmdParse(cmd):
             print('\033[2J\033[1;1H', end='')
             print(
                 f"\u001b[32;1mmodules\u001b[0m\n{'-' * 7}\n{os.listdir('/etc/ppet/modules')}")
-            cmd = input("\n> ")
-        cmdMod(cmdParse(cmd)[1])
+            cmd = shlex.split(input('\n> ').lower())
+        moduleName = cmd[1]
+        moduleJSON = json.load(
+            open(f'/etc/ppet/modules/{moduleName}/module.json'))
+        module = importModule(moduleName)
+        cmd = ['']
+        while not cmdParseLoaded(cmd, moduleName, moduleJSON, module):
+            print('\033[2J\033[1;1H', end='')
+            print(
+                f"\u001b[32;1m{moduleName}\u001b[0m\n{'-' * len(moduleName)}")
+            cmd = shlex.split(input('\n> ').lower())
+        jsonID = cmdParseLoaded(cmd, moduleName, moduleJSON, module)[1]
+        try:
+            callable(
+                getattr(module, moduleJSON['commands'][jsonID]['function']))
+        except AttributeError:
+            err(
+                f"Function '{moduleJSON['commands'][jsonID]['function']}' does not exist!")
+        print()
+        if moduleJSON['commands'][jsonID]['arguments'] != 0:
+            args = cmd[1:]
+        else:
+            args = []
+        moduleErr = getattr(
+            module, moduleJSON['commands'][jsonID]['function'])(*args)
+        if moduleErr != '' and moduleErr != None:
+            err(moduleErr)
+        input("\n(press enter to continue)\n")
 
 
-def checkModule(module):
-    if not os.path.isdir(f'/etc/ppet/modules/{module}'):
-        eout(
-            f"Module {module} does not exist in /etc/ppet/modules! (look at modules/example for help)")
-    if not os.path.isfile(f'/etc/ppet/modules/{module}/{module}.py'):
+def checkModule(name):
+    name = name.lower()
+    if not os.path.isdir(f'/etc/ppet/modules/{name}'):
+        err(
+            f"Module {name} does not exist in /etc/ppet/modules! (look at modules/example for help)")
+    if not os.path.isfile(f'/etc/ppet/modules/{name}/{name}.py'):
         pass
-    if not os.path.isfile(f'/etc/ppet/modules/{module}/module.json'):
+    if not os.path.isfile(f'/etc/ppet/modules/{name}/module.json'):
         pass
-    if module != json.load(open(f'/etc/ppet/modules/{module}/module.json'))['moduleName'].lower():
-        eout("Module name does not match json file!")
+    if name != json.load(open(f'/etc/ppet/modules/{name}/module.json'))['moduleName']:
+        err("Module name does not match json file!")
 
 
-def eout(error):
+def err(error):
     print('\033[2J\033[1;1H', end='')
     print(error)
-    input("\n\e[2mpress enter to continue\n")
+    input("\npress enter to continue\n")
     main()
 
 
 def cmdParse(cmd):
     if cmd == None:
-        return False, None
-    elif cmd == "help":
-        print('\033[2J\033[1;1H\u001b[32;1mhelp\u001b[0m\n----')
-        print('\ncommand examples:\nuse (module)\nhelp (module)\nexit')
-        input("\n\e[2mpress enter to continue\n")
-        return False, None
-    elif cmd[0:5] == "help ":
-        checkModule(cmd[5:])
-        print('\033[2J\033[1;1H', end='')
-        print(open(f'/etc/ppet/modules/{cmd[5:]}/help').read())
-        input("\n\e[2mpress enter to continue\n")
-        return False, None
-    elif cmd[0:4] == "use ":
-        checkModule(cmd[4:])
-        return True, cmd[4:].lower()
-    elif cmd == "exit":
+        return False
+    if cmd == []:
+        main()
+    if cmd[0] == 'help':
+        if len(cmd) == 1:
+            print('\033[2J\033[1;1H\u001b[32;1mhelp\u001b[0m\n----')
+            print('\ncommand examples:\nuse (module)\nhelp (module)\nexit')
+            input("\n(press enter to continue)\n")
+            return False
+        elif len(cmd) == 2:
+            print('\033[2J\033[1;1H', end='')
+            print(open(f'/etc/ppet/modules/{cmd[5:]}/help').read())
+            input("\n(press enter to continue)\n")
+            return False
+        err("Invalid input!")
+    elif cmd[0] == 'use':
+        checkModule(cmd[1])
+        return True
+    elif cmd[0] == 'exit':
         print('\033[2J\033[1;1H', end='')
         exit()
-    elif cmd == "":
-        return False, None
-    else:
-        eout("Invalid input!")
+    err("Invalid input!")
 
 
-def cmdMod(module):
-    sys.path.insert(0, f'/etc/ppet/modules/{module}')
-    if not importlib.util.find_spec(module) is None:
-        module = importlib.import_module(module)
-    else:
-        eout(f"{module} cannot be imported!")
+def cmdParseLoaded(cmd, name, json, module):
+    name = name.lower()
+    if cmd[0] == '':
+        return False
+    elif cmd[0] == 'help':
+        print('\033[2J\033[1;1H', end='')
+        print(
+            f"\u001b[32;1m{name}\u001b[0m\n{'-' * len(name)}\n")
+        print(f"{json['description']}\n")
+        jsonID = 0
+        # print(
+        #    f"{json['commands'][jsonID]['name']} - {json['commands'][jsonID]['description']}\n")
+        while jsonID < len(json['commands']):
+            print(
+                f"{json['commands'][jsonID]['name']} - {inspect.getdoc(getattr(module, json['commands'][jsonID]['function']))}\n")
+            jsonID += 1
+        input("\n(press enter to continue)\n")
+        return False
+    elif cmd[0] == 'exit':
+        print('\033[2J\033[1;1H', end='')
+        exit()
+    jsonID = 0
+    while cmd[0] != json['commands'][jsonID]['name'].lower():
+        if jsonID < len(json['commands']) - 1:
+            jsonID += 1
+        else:
+            err("Invalid command!")
+    return True, jsonID
+
+
+# def cmdParseArguments(cmd, num, json):
+
+
+def importModule(name):
+    name = name.lower()
+    sys.path.insert(0, f'/etc/ppet/modules/{name}')
+    try:
+        module = importlib.import_module(name)
+    except AttributeError:
+        err(f"{name} cannot be imported!")
     try:
         module.init()
     except AttributeError:
         pass
-    print('\033[2J\033[1;1H', end='')
-    print(f"\u001b[32;1m{module}\u001b[0m\n{'-' * len(module)}")
-    moduleJSON = json.load(open(f'/etc/ppet/modules/{module}/module.json'))
-    cmdInput = input('\n> ')
-    if cmdInput.lower() == "exit":
-        print('\033[2J\033[1;1H', end='')
-        exit()
-    elif cmdInput.lower() == "help":
-        print('\033[2J\033[1;1H', end='')
-        print(f"\u001b[32;1m{module}\u001b[0m\n{'-' * len(module)}\n")
-        jsonID = 0
-        while jsonID < len(moduleJSON['commands']) - 1:
-            jsonID += 1
-            print(
-                f"{moduleJSON['commands'][jsonID]['name']} - {moduleJSON['commands'][jsonID]['description']}\n")
-        input("\n(press enter to continue)\n")
-        cmdMod(module)
-    jsonID = 0
-    while cmdInput.lower() != moduleJSON['commands'][jsonID]['name'].lower():
-        if jsonID < (len(moduleJSON['commands']) - 1):
-            jsonID += 1
-        else:
-            eout("Invalid command!")
-    try:
-        callable(getattr(module, moduleJSON['commands'][jsonID]['function']))
-    except AttributeError:
-        eout(
-            f"Function '{moduleJSON['commands'][jsonID]['function']}' does not exist!")
-    _ = getattr(module, moduleJSON['commands'][jsonID]['function'])()
+    return module
 
 
 if __name__ == "__main__":

@@ -1,18 +1,26 @@
 {
     "moduleName": "example",
-    "description": "an example module",
+    "description": "An example module.",
     "commands": [
         {
             "name": "run",
             "function": "main",
-            "arguments": "",
-            "description": "runs the main function"
+            "arguments": 0
+        },
+        {
+            "name": "error",
+            "function": "error",
+            "arguments": 1
         },
         {
             "name": "test",
             "function": "test",
-            "arguments": "",
-            "description": "runs the test function"
+            "arguments": 2
+        },
+        {
+            "name": "test2",
+            "function": "test2",
+            "arguments": -1
         }
     ]
 }
