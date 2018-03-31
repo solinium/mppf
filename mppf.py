@@ -9,8 +9,6 @@ import shlex
 import inspect
 import importlib
 
-# change parse functions to use split() and not hacky string concatenation
-
 
 def main():
     while True:
@@ -25,12 +23,12 @@ def main():
             open(f'/etc/mppf/modules/{moduleName}/module.json'))
         module = importModule(moduleName)
         cmd = ['']
-        while not cmdParseLoaded(cmd, moduleName, moduleJSON, module):
+        while not cmdParseLoaded(cmd, moduleJSON, module):
             print('\033[2J\033[1;1H', end='')
             print(
                 f"\u001b[32;1m{moduleName}\u001b[0m\n{'-' * len(moduleName)}")
             cmd = shlex.split(input('\n> ').lower())
-        jsonID = cmdParseLoaded(cmd, moduleName, moduleJSON, module)[1]
+        jsonID = cmdParseLoaded(cmd, moduleJSON, module)[1]
         try:
             callable(
                 getattr(module, moduleJSON['commands'][jsonID]['function']))
@@ -53,7 +51,7 @@ def checkModule(name):
     name = name.lower()
     if not os.path.isdir(f'/etc/mppf/modules/{name}'):
         err(
-            f"Module {name} does not exist in /etc/mppf/modules! (look at modules/example for help)")
+            f"Module '{name}' does not exist in /etc/mppf/modules! (look at modules/example for help)")
     if not os.path.isfile(f'/etc/mppf/modules/{name}/{name}.py'):
         pass
     if not os.path.isfile(f'/etc/mppf/modules/{name}/module.json'):
@@ -87,7 +85,6 @@ def cmdParse(cmd):
             return False
         err("Invalid input!")
     elif cmd[0] == 'use':
-
         checkModule(cmd[1])
         return True
     elif cmd[0] == 'exit' or 'quit':
@@ -96,8 +93,8 @@ def cmdParse(cmd):
     err("Invalid input!")
 
 
-def cmdParseLoaded(cmd, name, json, module):
-    name = name.lower()
+def cmdParseLoaded(cmd, json, module):
+    name = shlex.split(str(module))[1].lower()
     if cmd[0] == '':
         return False
     elif cmd[0] == 'help':
