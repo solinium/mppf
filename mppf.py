@@ -10,9 +10,14 @@ import inspect
 import importlib
 
 
-def main():
+def main(keepLoaded):
+    moduleName = None
+    moduleJson = None
     while True:
+        if keepLoaded:
+            mainLoaded(moduleJson, importModule(moduleName), moduleName)
         cmd = None
+        keepLoaded = False
         while not cmdParse(cmd):
             print('\033[2J\033[1;1H', end='')
             print(
@@ -21,30 +26,36 @@ def main():
         moduleName = cmd[1]
         moduleJSON = json.load(
             open(f'/etc/mppf/modules/{moduleName}/module.json'))
-        module = importModule(moduleName)
-        cmd = ['']
-        while not cmdParseLoaded(cmd, moduleJSON, module):
-            print('\033[2J\033[1;1H', end='')
-            print(
-                f"\u001b[32;1m{moduleName}\u001b[0m\n{'-' * len(moduleName)}")
-            cmd = shlex.split(input('\n> ').lower())
-        jsonID = cmdParseLoaded(cmd, moduleJSON, module)[1]
-        try:
-            callable(
-                getattr(module, moduleJSON['commands'][jsonID]['function']))
-        except AttributeError:
-            err(
-                f"Function '{moduleJSON['commands'][jsonID]['function']}' does not exist!")
-        print()
-        if moduleJSON['commands'][jsonID]['arguments'] != 0:
-            args = cmd[1:]
-        else:
-            args = []
-        moduleErr = getattr(
-            module, moduleJSON['commands'][jsonID]['function'])(*args)
-        if moduleErr != '' and moduleErr != None:
-            err(moduleErr)
-        input("\n(press enter to continue)\n")
+        #module = importModule(moduleName)
+        keepLoaded = mainLoaded(
+            moduleJSON, importModule(moduleName), moduleName)
+
+
+def mainLoaded(json, module, moduleName):
+    cmd = ['']
+    while not cmdParseLoaded(cmd, json, module):
+        print('\033[2J\033[1;1H', end='')
+        print(
+            f"\u001b[32;1m{moduleName}\u001b[0m\n{'-' * len(moduleName)}")
+        cmd = shlex.split(input('\n> ').lower())
+    jsonID = cmdParseLoaded(cmd, json, module)[1]
+    try:
+        callable(
+            getattr(module, json['commands'][jsonID]['function']))
+    except AttributeError:
+        err(
+            f"Function '{json['commands'][jsonID]['function']}' does not exist!")
+    print()
+    if json['commands'][jsonID]['arguments'] != 0:
+        args = cmd[1:]
+    else:
+        args = []
+    moduleErr = getattr(
+        module, json['commands'][jsonID]['function'])(*args)
+    if moduleErr != '' and moduleErr != None:
+        err(moduleErr)
+    input("\n(press enter to continue)\n")
+    return True
 
 
 def checkModule(name):
@@ -62,16 +73,16 @@ def checkModule(name):
 
 def err(error):
     print('\033[2J\033[1;1H', end='')
-    print(error)
-    input("\n(press enter to continue)\n")
-    main()
+    print(f"Error:\n{error}\n")
+    input("(press enter to continue)\n")
+    main(False)
 
 
 def cmdParse(cmd):
     if cmd == None:
         return False
     if cmd == []:
-        main()
+        main(False)
     if cmd[0] == 'help':
         if len(cmd) == 1:
             print('\033[2J\033[1;1H\u001b[32;1mhelp\u001b[0m\n----')
@@ -110,7 +121,7 @@ def cmdParseLoaded(cmd, json, module):
         input("\n(press enter to continue)\n")
         return False
     elif cmd[0] == 'back':
-        main()
+        main(False)
     elif cmd[0] == 'exit':
         print('\033[2J\033[1;1H', end='')
         exit()
@@ -121,7 +132,6 @@ def cmdParseLoaded(cmd, json, module):
         else:
             err("Invalid command!")
     return True, jsonID
-
 
 # def cmdParseArguments(cmd, num, json):
 
@@ -146,4 +156,4 @@ if __name__ == "__main__":
     print(
         "\u001b[32;1mWelcome to the Mediocre Python Penetration Framework!\u001b[0m")
     time.sleep(2.5)
-    main()
+    main(False)
