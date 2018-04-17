@@ -15,5 +15,6 @@ def main():
         print('\n')
     if os.path.isfile('/etc/lsb-release') or os.path.isfile('/etc/redhat-release'):
         print("\u001b[32;1m/etc/*-release\u001b[0m\n--------------")
-        os.system('cat /etc/*-release')
+        subprocess.run(['cat', '/etc/*-release'],
+                       stdout=subprocess.PIPE).stdout.decode('utf-8')
         print('\n')

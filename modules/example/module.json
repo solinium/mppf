@@ -1,7 +1,7 @@
 {
-    "moduleName": "example",
+    "name": "example",
     "description": "An example module.",
-    "type": "module",
+    "type": "standard",
     "commands": [
         {
             "name": "run",

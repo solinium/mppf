@@ -1,12 +1,12 @@
 #!/bin/sh
 
-if [ ! -d '/etc/mppf' ]; then
-	sudo mkdir /etc/mppf 
+if [ ! -d '$HOME/.mppf' ]; then
+	mkdir $HOME/.mppf
 else
-	sudo rm -rf /etc/mppf
-	sudo mkdir -p /etc/mppf
+	rm -rf $HOME/.mppf
+	mkdir -p $HOME/.mppf
 fi
-sudo cp -r modules /etc/mppf/modules
+cp -r modules $HOME/.mppf
 pyver=`python -c 'import sys; print("%i" % (sys.hexversion<0x03000000))'`
 if [ $pyver -eq 0 ]; then
 	python mppf.py

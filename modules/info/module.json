@@ -1,12 +1,12 @@
 {
-    "moduleName": "info",
+    "name": "info",
     "description": "Prints basic system information, linux only ATM.",
     "type": "scanner",
     "commands": [
         {
             "name": "run",
             "function": "main",
-            "arguments": "",
+            "arguments": 0,
             "description": "runs the main function"
         }
     ]

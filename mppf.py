@@ -15,20 +15,45 @@ def main(keepLoaded):
     moduleJson = None
     while True:
         if keepLoaded:
-            mainLoaded(moduleJson, importModule(moduleName), moduleName)
+            mainLoaded(moduleJson, importModule(moduleName, False), moduleName)
         cmd = None
         keepLoaded = False
         while not cmdParse(cmd):
             print('\033[2J\033[1;1H', end='')
-            print(
-                f"\u001b[32;1mmodules\u001b[0m\n{'-' * 7}\n{os.listdir('/etc/mppf/modules')}")
+            folderList = os.listdir(f'{os.environ["HOME"]}/.mppf/modules')
+            modules = {'standard': [], 'scanners': [], 'exploits': []}
+            for x in folderList:
+                jsonIndex = json.load(
+                    open(f'{os.environ["HOME"]}/.mppf/modules/{folderList[folderList.index(x)]}/module.json'))
+                if jsonIndex['type'] == 'standard':
+                    modules['standard'].append(jsonIndex['name'])
+                elif jsonIndex['type'] == 'scanner':
+                    modules['scanners'].append(jsonIndex['name'])
+                elif jsonIndex['type'] == 'exploit':
+                    modules['exploits'].append(jsonIndex['name'])
+                else:
+                    error("Invalid module type!")
+            if modules['standard'] != []:
+                print(
+                    f"\u001b[32;1mstandard\u001b[0m\n-------\n{modules['standard']}")
+            if modules['scanners'] != []:
+                if modules['standard'] != []:
+                    print('\n')
+                print(
+                    f"\u001b[32;1mscanners\u001b[0m\n--------\n{modules['scanners']}")
+            if modules['exploits'] != []:
+                if modules['scanners'] != []:
+                    print('\n')
+                elif modules['standard'] != []:
+                    print('\n')
+                print(
+                    f"\n\u001b[32;1mexploits\u001b[0m\n--------\n{modules['exploits']}")
             cmd = shlex.split(input('\n> ').lower())
         moduleName = cmd[1]
         moduleJSON = json.load(
-            open(f'/etc/mppf/modules/{moduleName}/module.json'))
-        #module = importModule(moduleName)
+            open(f'{os.environ["HOME"]}/.mppf/modules/{moduleName}/module.json'))
         keepLoaded = mainLoaded(
-            moduleJSON, importModule(moduleName), moduleName)
+            moduleJSON, importModule(moduleName, True), moduleName)
 
 
 def mainLoaded(json, module, moduleName):
@@ -40,40 +65,38 @@ def mainLoaded(json, module, moduleName):
         cmd = shlex.split(input('\n> ').lower())
     jsonID = cmdParseLoaded(cmd, json, module)[1]
     try:
-        callable(
-            getattr(module, json['commands'][jsonID]['function']))
+        callable(getattr(module, json['commands'][jsonID]['function']))
     except AttributeError:
-        err(
+        error(
             f"Function '{json['commands'][jsonID]['function']}' does not exist!")
     print()
+    args = []
     if json['commands'][jsonID]['arguments'] != 0:
         args = cmd[1:]
-    else:
-        args = []
-    moduleErr = getattr(
-        module, json['commands'][jsonID]['function'])(*args)
-    if moduleErr != '' and moduleErr != None:
-        err(moduleErr)
+    moduleErr = getattr(module, json['commands'][jsonID]['function'])(*args)
+    #(*args)
+    if moduleErr != '' and None:
+        error(moduleErr)
     input("\n(press enter to continue)\n")
     return True
 
 
 def checkModule(name):
     name = name.lower()
-    if not os.path.isdir(f'/etc/mppf/modules/{name}'):
-        err(
-            f"Module '{name}' does not exist in /etc/mppf/modules! (look at modules/example for help)")
-    if not os.path.isfile(f'/etc/mppf/modules/{name}/{name}.py'):
+    if not os.path.isdir(f'{os.environ["HOME"]}/.mppf/modules/{name}'):
+        error(
+            f"Module '{name}' does not exist in {os.environ['HOME']}/.mppf/modules! (look at modules/example for help)")
+    if not os.path.isfile(f'{os.environ["HOME"]}/.mppf/modules/{name}/{name}.py'):
         pass
-    if not os.path.isfile(f'/etc/mppf/modules/{name}/module.json'):
+    if not os.path.isfile(f'{os.environ["HOME"]}/.mppf/modules/{name}/module.json'):
         pass
-    if name != json.load(open(f'/etc/mppf/modules/{name}/module.json'))['moduleName']:
-        err("Module name does not match json file!")
+    if name != json.load(open(f'{os.environ["HOME"]}/.mppf/modules/{name}/module.json'))['name'].lower():
+        error("Module name does not match json file!")
 
 
-def err(error):
+def error(err):
     print('\033[2J\033[1;1H', end='')
-    print(f"Error:\n{error}\n")
+    print(f"Error:\n{err}\n")
     input("(press enter to continue)\n")
     main(False)
 
@@ -91,17 +114,18 @@ def cmdParse(cmd):
             return False
         elif len(cmd) == 2:
             print('\033[2J\033[1;1H', end='')
-            print(open(f'/etc/mppf/modules/{cmd[5:]}/help').read())
+            print(
+                open(f'{os.environ["HOME"]}/.mppf/modules/{cmd[5:]}/help').read())
             input("\n(press enter to continue)\n")
             return False
-        err("Invalid input!")
+        error("Invalid input!")
     elif cmd[0] == 'use':
         checkModule(cmd[1])
         return True
-    elif cmd[0] == 'exit' or 'quit':
+    elif cmd[0] == 'exit' or 'e' or 'quit' or 'q':
         print('\033[2J\033[1;1H', end='')
         exit()
-    err("Invalid input!")
+    error("Invalid input!")
 
 
 def cmdParseLoaded(cmd, json, module):
@@ -114,7 +138,7 @@ def cmdParseLoaded(cmd, json, module):
             f"\u001b[32;1m{name}\u001b[0m\n{'-' * len(name)}\n")
         print(f"{json['description']}\n")
         jsonID = 0
-        while jsonID < len(json['commands']):
+        while jsonID < len(json['commands'])-1:
             print(
                 f"{json['commands'][jsonID]['name']} - {inspect.getdoc(getattr(module, json['commands'][jsonID]['function']))}\n")
             jsonID += 1
@@ -130,23 +154,24 @@ def cmdParseLoaded(cmd, json, module):
         if jsonID < len(json['commands']) - 1:
             jsonID += 1
         else:
-            err("Invalid command!")
+            error("Invalid command!")
     return True, jsonID
 
 # def cmdParseArguments(cmd, num, json):
 
 
-def importModule(name):
+def importModule(name, init):
     name = name.lower()
-    sys.path.insert(0, f'/etc/mppf/modules/{name}')
+    sys.path.insert(0, f'{os.environ["HOME"]}/.mppf/modules/{name}')
     try:
         module = importlib.import_module(name)
     except AttributeError:
-        err(f"{name} cannot be imported!")
-    try:
-        module.init()
-    except AttributeError:
-        pass
+        error(f"{name} cannot be imported!")
+    if init:
+        try:
+            module.init()
+        except AttributeError:
+            pass
     return module
 
 

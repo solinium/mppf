@@ -2,10 +2,13 @@
 
 sudo clear
 git clone https://github.com/solinium/mppf /tmp/mppf
-sudo mkdir /etc/mppf
-sudo cp -r /tmp/mppf/modules /etc/mppf/
-sudo cp /tmp/ppet/mppf.py /usr/bin/mppf
+if [ -d '$HOME/.mppf' ]; then
+    rm -rf $HOME/.mppf
+fi
+mkdir $HOME/.mppf
+mv -r /tmp/mppf/modules $HOME/.mppf
+sudo mv /tmp/mppf/mppf.py /usr/bin/mppf
 sudo chmod +x /usr/bin/mppf
-rm -rf /tmp/mppf/
+rm -rf /tmp/mppf
 clear
 echo "Install completed, launch with 'mppf'."
