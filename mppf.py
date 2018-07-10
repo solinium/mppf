@@ -9,6 +9,9 @@ import shlex
 import inspect
 import importlib
 
+# change main to not accept bool
+#
+
 
 def main(keepLoaded):
     moduleName = None
@@ -74,7 +77,7 @@ def mainLoaded(json, module, moduleName):
     if json['commands'][jsonID]['arguments'] != 0:
         args = cmd[1:]
     moduleErr = getattr(module, json['commands'][jsonID]['function'])(*args)
-    #(*args)
+    # (*args)
     if moduleErr != '' and None:
         error(moduleErr)
     input("\n(press enter to continue)\n")
@@ -96,7 +99,7 @@ def checkModule(name):
 
 def error(err):
     print('\033[2J\033[1;1H', end='')
-    print(f"Error:\n{err}\n")
+    print(f"\033[38;5;1mError\n-----\033[0m\n{err}\n")
     input("(press enter to continue)\n")
     main(False)
 
@@ -106,20 +109,12 @@ def cmdParse(cmd):
         return False
     if cmd == []:
         main(False)
-    if cmd[0] == 'help':
-        if len(cmd) == 1:
-            print('\033[2J\033[1;1H\u001b[32;1mhelp\u001b[0m\n----')
-            print('\ncommand examples:\nuse (module)\nback (in module)\nhelp\nexit')
-            input("\n(press enter to continue)\n")
-            return False
-        elif len(cmd) == 2:
-            print('\033[2J\033[1;1H', end='')
-            print(
-                open(f'{os.environ["HOME"]}/.mppf/modules/{cmd[5:]}/help').read())
-            input("\n(press enter to continue)\n")
-            return False
-        error("Invalid input!")
-    elif cmd[0] == 'use':
+    if cmd[0] == 'help' and len(cmd) == 1:
+        print('\033[2J\033[1;1H\u001b[32;1mhelp\u001b[0m\n----')
+        print('\ncommand examples:\nuse (module)\nback (in module)\nhelp\nexit')
+        input("\n(press enter to continue)\n")
+        return False
+    elif cmd[0] == 'use' and (len(cmd) == 1 or 2):
         checkModule(cmd[1])
         return True
     elif cmd[0] == 'exit' or 'e' or 'quit' or 'q':
@@ -136,7 +131,8 @@ def cmdParseLoaded(cmd, json, module):
         print('\033[2J\033[1;1H', end='')
         print(
             f"\u001b[32;1m{name}\u001b[0m\n{'-' * len(name)}\n")
-        print(f"{json['description']}\n")
+        print(f"{json['description']}")
+        print('-' * len(json['description']) + '\n')
         jsonID = 0
         while jsonID < len(json['commands'])-1:
             print(
@@ -156,8 +152,6 @@ def cmdParseLoaded(cmd, json, module):
         else:
             error("Invalid command!")
     return True, jsonID
-
-# def cmdParseArguments(cmd, num, json):
 
 
 def importModule(name, init):

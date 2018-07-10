@@ -7,7 +7,7 @@
             "name": "run",
             "function": "main",
             "arguments": 0,
-            "description": "runs the main function"
+            "description": "Scans & prints info"
         }
     ]
 }
